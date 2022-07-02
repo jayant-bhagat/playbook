@@ -67,6 +67,30 @@
        - "{{ pkgs }}"
     notify: restart nginx
 
+#  handlers:
+#   - name: restart nginx
+#      service:
+#        name: nginx
+#        state: restarted
+
+  - name: install lamp stack
+    apt:
+        pkg:
+           - php-curl
+           - php-json
+           - php-cgi
+           - php-xsl
+           - php-cgi
+           - php-gd
+           - php-zip
+           - php-xmlrpc
+           - php-soap
+           - php-intl
+           - libapache2-mod-php
+        state: latest
+        update_cache: yes
+    notify: restart nginx
+    ignore_errors: true
   handlers:
     - name: restart nginx
       service:
