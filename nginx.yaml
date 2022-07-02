@@ -1,0 +1,74 @@
+- hosts: all
+  become: yes
+  vars:
+    doc_root: /var/www/mywebsite
+    pkgs:
+      - php
+      - php-fpm
+      - php-mysql
+      - php-mcrypt
+
+  tasks:
+  - name: "apt-get update"
+    apt:
+      update_cache: yes
+      cache_valid_time: 3600
+  - name: Installation install software-properties-common
+    apt: name=software-properties-common
+
+  - name: "Repo PHP 7.4"
+    apt_repository:
+       repo="ppa:ondrej/php"
+  - name: Installing nginx
+    apt:
+        name: nginx
+        state: present
+  - name: create root dir
+    file:
+      path: "{{ item }}"
+      state: directory
+      mode: '0755'
+    with_items:
+        - "{{ doc_root }}"
+
+  - name: copy file in root dir
+    copy:
+      src: index.html
+      dest: "{{ item }}"
+      mode: '644'
+    with_items:
+        - "{{ doc_root }}"
+
+  - name: delete default website
+    file:
+       path: /etc/nginx/sites-enabled/default
+       state: absent
+  - name: copy default site.conf
+    template:
+      src: site.conf.j2
+      dest:  /etc/nginx/sites-available/site.conf
+      owner: root
+      group: root
+      mode: '0644'
+
+  - name: Enable new site
+    file:
+      src: /etc/nginx/sites-available/site.conf
+      dest: /etc/nginx/sites-enabled/site.conf
+      state: link
+      force: yes
+    notify: restart nginx
+
+  - name: Installing php package
+    apt:
+        name: '{{ pkgs }}'
+        state: latest
+    with_items:
+       - "{{ pkgs }}"
+    notify: restart nginx
+
+  handlers:
+    - name: restart nginx
+      service:
+        name: nginx
+        state: restarted
